@@ -31,7 +31,7 @@ class Node:
     def getBestUCT(self):
 
         bestNode = None;
-        bestUCT = -1;
+        bestUCT = float("-inf");
 
         for node in self.visitedNodes:
 
@@ -71,34 +71,41 @@ class Node:
 
 
     def backpropagate(self, result):
-        self.visits += 1;
-        self.wins += result;
         
-        if (self.parent):
-            self.parent.backpropagate(-result);
+        node = self;
+        
+        while (node is not None):
+            node.visits += 1;
+            node.wins -= result * node.turn;
+            
+            node = node.parent;
         
 
     # make random moves untill game terminates, and go back up updating the nodes
     def simulateGame(self):
-
-        if (self.isLeaf):
-            self.backpropagate(getState(self.board) * self.turn);
-            return;
-
-        randomMove = choice(self.possibleMoves);
-
-        self.makeNodeFromMove(randomMove).simulateGame();
+        
+        game = copy2Darray(self.board);
+        moves = getPossibleMoves(game);
+        turn = self.turn;
+        
+        while (len(moves) != 0):
+            makeMove(game, choice(moves), turn);
+            moves = getPossibleMoves(game);
+            turn = -turn;
+            
+        result = getState(game);
+        self.backpropagate(result);
 
 
     def bestChild(self):
 
         bestChild = None;
-        mostVisits = 0;
+        mostVisits = float("-inf");
 
         for node in self.visitedNodes:
-            if (node.wins / node.visits < mostVisits):
+            if (node.visits > mostVisits):
                 bestChild = node;
-                mostVisits = node.wins / node.visits;
+                mostVisits = node.visits;
 
         print("Oi:", bestChild.wins);
         return bestChild;
@@ -223,7 +230,7 @@ if (input("Quer começar? ")):
     if (move not in getPossibleMoves(board)):
         print("Você é burro mesmo");
     else:
-        makeMove(board, move, -1);
+        makeMove(board, move, 1);
 
 while True:
     
@@ -232,8 +239,8 @@ while True:
         print("Você empatou!");
         break;
 
-    agent = Node(board, 1);
-    board = agent.MCTS(50).board;
+    agent = Node(board, -1);
+    board = agent.MCTS(500).board;
     
     if (getState(board)):
         printBoard(board);
@@ -251,7 +258,7 @@ while True:
         print("Você é burro mesmo");
         break;
         
-    makeMove(board, move, -1);
+    makeMove(board, move, 1);
     
     if (getState(board)):
         printBoard(board);
